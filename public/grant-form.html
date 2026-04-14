@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grant Application - Brewers Community Foundation</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="brewers-shell">
+
+  <div class="top-gold-bar">This Is My Crew.</div>
+
+  <header class="brewers-header">
+    <nav class="brewers-nav">
+      <div class="nav-left">
+        <div class="nav-logo">
+          <img src="images/bcf-logo-22-.png" alt="BCF Logo" />
+        </div>
+        <a href="sponsors.html">Sponsors</a>
+        <a href="story.html">Impact Story</a>
+        <a href="grant-form.html" class="active">Grant Requests</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="page-shell">
+    <div class="side-panel left-panel"></div>
+
+    <section class="center-stage">
+      <div class="content-frame form-page">
+        <div class="page-title-bar">
+          <h1>Grant Application</h1>
+          <p>Fueling community progress through strategic partnerships.</p>
+        </div>
+
+        <div class="form-content">
+          <form id="grant-form" enctype="multipart/form-data">
+            <fieldset>
+              <legend>Organization Information</legend>
+
+              <label for="org-name">Name of Organization *</label>
+              <input
+                type="text"
+                id="org-name"
+                name="org-name"
+                placeholder="Enter organization name"
+                required
+              />
+            </fieldset>
+
+            <fieldset>
+              <legend>Grant Details</legend>
+
+              <label for="grant-date">Submission Date *</label>
+              <input
+                type="date"
+                id="grant-date"
+                name="grant-date"
+                required
+              />
+
+              <label for="grant-category">Focus Area (Category) *</label>
+              <select id="grant-category" name="grant-category" required>
+                <option value="" disabled selected>Select a category...</option>
+                <option value="Community">Community</option>
+                <option value="Youth">Youth</option>
+                <option value="Health">Health</option>
+              </select>
+
+              <label for="amount">Requested Amount ($) *</label>
+              <input
+                type="number"
+                id="amount"
+                name="amount"
+                min="1"
+                placeholder="Enter requested amount"
+                required
+              />
+
+              <label for="summary">Impact Description *</label>
+              <textarea
+                id="summary"
+                name="summary"
+                rows="6"
+                placeholder="Describe the impact this funding will support..."
+                required
+              ></textarea>
+            </fieldset>
+
+            <fieldset>
+              <legend>Community Impact Media</legend>
+
+              <label for="impact-media">Upload Photo or Video of Your Project *</label>
+              <input
+                type="file"
+                id="impact-media"
+                name="impact-media"
+                accept="image/*,video/*"
+                required
+              />
+              <p class="hint">Accepted formats: JPG, PNG, MP4, MOV.</p>
+            </fieldset>
+
+            <button type="submit" class="submit-btn" id="submit-btn">
+              Submit Application
+            </button>
+
+            <p id="form-status" class="hint" style="margin-top: 12px;"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <div class="side-panel right-panel"></div>
+  </main>
+
+  <a href="https://www.mlb.com/brewers/community/donate" class="sticky-donate-btn" target="_blank">
+    Join the Team: Donate Now
+  </a>
+
+<script>
+  const form = document.getElementById("grant-form");
+  const grantDateInput = document.getElementById("grant-date");
+  const submitBtn = document.getElementById("submit-btn");
+  const formStatus = document.getElementById("form-status");
+
+  grantDateInput.valueAsDate = new Date();
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    formStatus.textContent = "";
+    formStatus.style.color = "red";
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Submitting...";
+
+    try {
+      const formData = new FormData(form);
+
+      const response = await fetch("/submit-grant", {
+        method: "POST",
+        body: formData
+      });
+
+      const rawText = await response.text();
+      console.log("RAW SERVER RESPONSE:", rawText);
+
+      let result = {};
+      if (rawText) {
+        try {
+          result = JSON.parse(rawText);
+        } catch {
+          throw new Error(`Server did not return valid JSON. Response was: ${rawText}`);
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(result.details || result.error || "Submission failed.");
+      }
+
+      formStatus.textContent = result.message || "Application submitted successfully.";
+      formStatus.style.color = "green";
+
+      form.reset();
+      grantDateInput.valueAsDate = new Date();
+    } catch (error) {
+      console.error("Grant form submission error:", error);
+      formStatus.textContent = error.message || "Something went wrong.";
+      formStatus.style.color = "red";
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit Application";
+    }
+  });
+</script>
+</body>
+</html>

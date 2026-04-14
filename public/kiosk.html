@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BCF Kiosk (Internal)</title>
+
+  <style>
+    /* ==================================================
+       BRAND COLORS + GLOBAL VARIABLES
+       ================================================== */
+    :root {
+      --brewers-navy: #0a2351;
+      --brewers-dark: #06152f;
+      --brewers-gold: #f4c542;
+      --white: #ffffff;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--brewers-dark);
+      color: var(--white);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ==================================================
+       TOP HEADER / SCOREBOARD BAR
+       ================================================== */
+    .scoreboard-bar {
+      height: 74px;
+      background: linear-gradient(90deg, var(--brewers-gold), #ffd86a);
+      color: var(--brewers-navy);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      box-shadow: var(--shadow);
+      z-index: 20;
+      flex-shrink: 0;
+    }
+
+    .scoreboard-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .scoreboard-left img {
+      height: 44px;
+      width: auto;
+      display: block;
+    }
+
+    .scoreboard-title {
+      font-size: 2rem;
+      text-transform: uppercase;
+    }
+
+    .scoreboard-right {
+      font-size: 0.95rem;
+      text-transform: uppercase;
+    }
+
+    /* ==================================================
+       MAIN STADIUM SCREEN
+       ================================================== */
+    .stadium-screen {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+      background: #081a3d;
+    }
+
+    .screen-bg {
+      position: absolute;
+      inset: 0;
+      background: #081a3d;
+      filter: brightness(0.28);
+      transform: scale(1.03);
+    }
+
+    .screen-overlay {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to top, rgba(6, 21, 47, 0.95) 0%, rgba(6, 21, 47, 0.38) 42%, rgba(6, 21, 47, 0.22) 100%),
+        linear-gradient(to right, rgba(6, 21, 47, 0.82) 0%, rgba(6, 21, 47, 0.18) 45%, rgba(6, 21, 47, 0.78) 100%);
+    }
+
+    /* ==================================================
+       MAIN 2-COLUMN KIOSK LAYOUT
+       LEFT = IMAGE
+       RIGHT = TEXT (full height, no stats box)
+       ================================================== */
+    .kiosk-layout {
+      position: relative;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 30px;
+      align-items: stretch;
+      height: 100%;
+      padding: 36px 44px 26px;
+    }
+
+    /* ==================================================
+       LEFT SIDE IMAGE AREA
+       ================================================== */
+    .visual-stage {
+      position: relative;
+      display: flex;
+      align-items: stretch;
+      min-height: 0;
+    }
+
+    .visual-frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 460px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 2px solid rgba(244, 197, 66, 0.22);
+      background: #10264f;
+      /* Centers the image inside the frame when using contain */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .visual-frame img {
+      width: 100%;
+      height: 100%;
+      /* contain = whole image always visible, never cropped */
+      object-fit: contain;
+      display: block;
+      transition: opacity 0.55s ease-in-out, transform 0.9s ease;
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .visual-frame::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to top, rgba(6, 21, 47, 0.5) 0%, rgba(6, 21, 47, 0.0) 40%);
+      pointer-events: none;
+    }
+
+    /* ==================================================
+       RIGHT SIDE — STORY CARD ONLY, FULL HEIGHT
+       ================================================== */
+    .story-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    /* Story card stretches to fill the full right column */
+    .story-copy-card {
+      flex: 1;
+      background: rgba(10, 35, 81, 0.82);
+      border: 2px solid rgba(244, 197, 66, 0.24);
+      border-radius: 20px;
+      padding: 36px 32px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .story-kicker {
+      color: var(--brewers-gold);
+      font-size: 1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+    }
+
+    .story-copy-card h1 {
+      font-size: clamp(2.4rem, 4.4vw, 4.6rem);
+      line-height: 0.96;
+      font-weight: 900;
+      text-transform: uppercase;
+      margin: 0 0 18px;
+      text-shadow: 0 6px 24px rgba(0, 0, 0, 0.38);
+      transition: opacity 0.5s ease-in-out;
+      opacity: 1;
+    }
+
+    .story-copy-card p {
+      font-size: clamp(1rem, 1.25vw, 1.35rem);
+      line-height: 1.55;
+      color: #edf3fa;
+      margin: 0;
+      transition: opacity 0.5s ease-in-out;
+      opacity: 1;
+    }
+
+    .story-meta {
+      margin-top: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #d9e7f5;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ==================================================
+       BOTTOM TICKER
+       ================================================== */
+    .impact-ticker {
+      height: 74px;
+      background: rgba(5, 17, 40, 0.98);
+      border-top: 3px solid var(--brewers-gold);
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+      z-index: 15;
+      flex-shrink: 0;
+    }
+
+    .ticker-track {
+      display: inline-flex;
+      align-items: center;
+      white-space: nowrap;
+      animation: scrollTicker 28s linear infinite;
+      will-change: transform;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 1.05rem;
+      color: var(--white);
+    }
+
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 46px;
+    }
+
+    .ticker-item strong {
+      color: var(--brewers-gold);
+      margin-right: 10px;
+    }
+
+    @keyframes scrollTicker {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    .slide-indicator {
+      position: absolute;
+      bottom: 20px;
+      left: 24px;
+      z-index: 10;
+      color: rgba(255, 255, 255, 0.84);
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .fade-out {
+      opacity: 0 !important;
+    }
+
+    .fade-in {
+      opacity: 1 !important;
+    }
+
+    @media (max-width: 1100px) {
+      .kiosk-layout {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .visual-frame {
+        min-height: 320px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .scoreboard-title {
+        font-size: 1.2rem;
+      }
+
+      .scoreboard-right {
+        display: none;
+      }
+
+      .kiosk-layout {
+        padding: 24px 20px 20px;
+      }
+
+      .impact-ticker {
+        height: 64px;
+      }
+
+      .ticker-track {
+        font-size: 0.92rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ==================================================
+       TOP HEADER
+       ================================================== -->
+  <header class="scoreboard-bar">
+    <div class="scoreboard-left">
+      <img src="images/bcf-logo-22-.png" alt="BCF Logo">
+      <div class="scoreboard-title">Brewers Community Foundation</div>
+    </div>
+  </header>
+
+  <!-- ==================================================
+       MAIN KIOSK AREA
+       ================================================== -->
+  <main class="stadium-screen">
+    <div class="screen-bg"></div>
+    <div class="screen-overlay"></div>
+
+    <div class="kiosk-layout">
+
+      <!-- LEFT SIDE — IMAGE ONLY, NO OVERLAY BADGES -->
+      <section class="visual-stage">
+        <div class="visual-frame">
+          <img id="story-image" src="images/picture-bcf-3.jpg" alt="Community impact story image">
+        </div>
+      </section>
+
+      <!-- RIGHT SIDE — STORY CARD, FULL HEIGHT -->
+      <section class="story-panel">
+        <div class="story-copy-card">
+          <div class="story-kicker">Brewers Community Foundation</div>
+          <h1 id="story-title">Loading...</h1>
+          <p id="story-description">Fetching stories from Monday...</p>
+          <div class="story-meta">
+            <span class="meta-pill" id="story-amount">Amount: --</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="slide-indicator" id="slide-indicator">Story 1 of 1</div>
+  </main>
+
+  <!-- ==================================================
+       BOTTOM TICKER
+       ================================================== -->
+  <footer class="impact-ticker">
+    <div class="ticker-track">
+      <span class="ticker-item"><strong>BCF Impact:</strong> Supporting children and families across Greater Milwaukee and Wisconsin</span>
+      <span class="ticker-item"><strong>2025:</strong> $5.7M+ raised</span>
+      <span class="ticker-item"><strong>Since 2010:</strong> $66M+ invested</span>
+      <span class="ticker-item"><strong>Community:</strong> 200+ nonprofits supported</span>
+      <span class="ticker-item"><strong>Service:</strong> 3,300+ volunteer hours</span>
+      <span class="ticker-item"><strong>BCF Impact:</strong> Supporting children and families across Greater Milwaukee and Wisconsin</span>
+      <span class="ticker-item"><strong>2025:</strong> $5.7M+ raised</span>
+      <span class="ticker-item"><strong>Since 2010:</strong> $66M+ invested</span>
+      <span class="ticker-item"><strong>Community:</strong> 200+ nonprofits supported</span>
+      <span class="ticker-item"><strong>Service:</strong> 3,300+ volunteer hours</span>
+    </div>
+  </footer>
+
+  <script>
+    // ==================================================
+    // FALLBACK STORIES
+    // Show if the API is unavailable
+    // ==================================================
+    let stories = [
+      {
+        title: "Sojourner House",
+        description: "Families receive shelter, advocacy, and support through community-funded programming.",
+        image: "images/picture-bcf-3.jpg",
+        badge: "Community",
+        grantStatus: "Completed",
+        awardDate: "Mar 16, 2025",
+        grantAmount: 5000
+      },
+      {
+        title: "Boys & Girls Club",
+        description: "A single grant helped students visit colleges and expand their educational possibilities.",
+        image: "images/picture-bcf-1.jpg",
+        badge: "Community",
+        grantStatus: "Completed",
+        awardDate: "Mar 17, 2025",
+        grantAmount: 20000
+      }
+    ];
+
+    let currentIndex = 0;
+    const ROTATE_DELAY = 30000;
+    let interval;
+
+    function updateIndicator() {
+      const indicator = document.getElementById("slide-indicator");
+      indicator.innerText = `Story ${currentIndex + 1} of ${stories.length}`;
+    }
+
+    function renderStory(index) {
+      if (!stories.length) return;
+
+      const story = stories[index];
+
+      const imgEl = document.getElementById("story-image");
+      const titleEl = document.getElementById("story-title");
+      const descEl = document.getElementById("story-description");
+      const amountEl = document.getElementById("story-amount");
+
+      imgEl.classList.add("fade-out");
+      titleEl.classList.add("fade-out");
+      descEl.classList.add("fade-out");
+
+      setTimeout(() => {
+        imgEl.src = story.image || "images/picture-bcf-3.jpg";
+        imgEl.alt = story.title || "Community impact story image";
+        titleEl.innerText = story.title || "Untitled Story";
+        descEl.innerText = story.description || "No description available.";
+
+        const amount = Number(story.grantAmount);
+        amountEl.innerText = `Amount: ${
+          amount && amount !== 0
+            ? `$${amount.toLocaleString()}`
+            : "--"
+        }`;
+
+        imgEl.classList.remove("fade-out");
+        titleEl.classList.remove("fade-out");
+        descEl.classList.remove("fade-out");
+
+        imgEl.classList.add("fade-in");
+        titleEl.classList.add("fade-in");
+        descEl.classList.add("fade-in");
+
+        setTimeout(() => {
+          imgEl.classList.remove("fade-in");
+          titleEl.classList.remove("fade-in");
+          descEl.classList.remove("fade-in");
+        }, 500);
+      }, 250);
+
+      updateIndicator();
+    }
+
+    function rotateStories() {
+      if (!stories.length) return;
+      currentIndex = (currentIndex + 1) % stories.length;
+      renderStory(currentIndex);
+    }
+
+    function resetInterval() {
+      clearInterval(interval);
+      interval = setInterval(rotateStories, ROTATE_DELAY);
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (!stories.length) return;
+
+      if (e.key === "ArrowRight") {
+        currentIndex = (currentIndex + 1) % stories.length;
+        renderStory(currentIndex);
+        resetInterval();
+      }
+
+      if (e.key === "ArrowLeft") {
+        currentIndex = (currentIndex - 1 + stories.length) % stories.length;
+        renderStory(currentIndex);
+        resetInterval();
+      }
+    });
+
+    // ==================================================
+    // FETCH LIVE STORIES FROM YOUR SERVER
+    // Calls /api/kiosk-stories — replaces fallback if data comes back
+    // ==================================================
+    async function loadKioskStories() {
+      try {
+        const res = await fetch("/api/kiosk-stories");
+        const data = await res.json();
+
+        if (Array.isArray(data) && data.length > 0) {
+          stories = data;
+          currentIndex = 0;
+        }
+
+        renderStory(currentIndex);
+        resetInterval();
+      } catch (err) {
+        console.error("Error fetching kiosk stories from server:", err);
+        renderStory(currentIndex);
+        resetInterval();
+      }
+    }
+
+    loadKioskStories();
+  </script>
+</body>
+</html>

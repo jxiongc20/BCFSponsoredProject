@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BCF Stories</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="brewers-shell">
+
+    <div class="top-gold-bar">This Is My Crew.</div>
+
+    <header class="brewers-header">
+        <nav class="brewers-nav">
+            <div class="nav-left">
+                <div class="nav-logo">
+                    <img src="images/bcf-logo-22-.png" alt="BCF Logo">
+                </div>
+                <a href="sponsors.html">Sponsors</a>
+                <a href="story.html" class="active">Impact Story</a>
+                <a href="grant-form.html">Grant Requests</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="page-shell">
+        <div class="side-panel left-panel"></div>
+
+        <section class="center-stage">
+            <div class="content-frame">
+                <div class="page-title-bar">
+                    <h1>Our Community Impact</h1>
+                    <p>
+                        Brewers Community Foundation harnesses the pride, passion, and commitment of Brewers fans,
+                        players, and supporters to positively impact the lives of children and their families in
+                        Greater Milwaukee and Wisconsin.
+                    </p>
+                </div>
+
+                <div class="page-content">
+                    <section class="story-container" id="story-container">
+                        <!-- Live stories from /api/storypage-stories will load here -->
+                    </section>
+                </div>
+
+                <section class="impact-tracker">
+                    <div class="tracker-header">
+                        <h2>2025 BCF Impact Box Score</h2>
+                        <p>Every play on the field fuels progress in our community.</p>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-number">5.7M+</span>
+                            <p class="stat-label">Raised in 2025</p>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">$66M+</span>
+                            <p class="stat-label">Total Since 2010</p>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">200+</span>
+                            <p class="stat-label">Nonprofits Supported</p>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">3,300+</span>
+                            <p class="stat-label">Volunteer Hours</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <div class="side-panel right-panel"></div>
+    </main>
+
+    <a href="https://www.mlb.com/brewers/community/donate" class="sticky-donate-btn" target="_blank">
+        Join the Team: Donate Now
+    </a>
+
+    <script>
+      async function loadStoryPage() {
+        try {
+          const res = await fetch("/api/storypage-stories");
+          const stories = await res.json();
+
+          const container = document.getElementById("story-container");
+          container.innerHTML = "";
+
+          if (!Array.isArray(stories) || stories.length === 0) {
+            container.innerHTML = "<p>No stories available.</p>";
+            return;
+          }
+
+          stories.forEach((story, index) => {
+            const isReverse = index % 2 !== 0;
+            const amount = Number(story.grantAmount);
+
+            const formattedAmount =
+              story.grantAmount && amount !== 0
+                ? `$${amount.toLocaleString()}`
+                : "--";
+
+            const article = document.createElement("article");
+            article.className = "story-row" + (isReverse ? " reverse" : "");
+
+            article.innerHTML = `
+              <div class="story-image">
+                <img src="${story.image || "images/picture-bcf-3.jpg"}" alt="${story.title || "Grant story"}">
+              </div>
+              <div class="story-text">
+                <h2>${story.title || "Untitled Story"}</h2>
+                <p>${story.description || "No description available."}</p>
+                <p>
+             
+                  <strong>Amount:</strong> ${formattedAmount}
+                </p>
+              </div>
+            `;
+
+            container.appendChild(article);
+          });
+
+        } catch (err) {
+          console.error("Error loading story page:", err);
+
+          const container = document.getElementById("story-container");
+          container.innerHTML = "<p>Unable to load stories at this time.</p>";
+        }
+      }
+
+      loadStoryPage();
+    </script>
+
+</body>
+</html>
